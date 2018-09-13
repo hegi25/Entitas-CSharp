@@ -44,9 +44,9 @@ public partial class TestEntity {
                 var index = TestComponentsLookup.CustomPrefixFlag;
                 if (value) {
                     var componentPool = GetComponentPool(index);
-                    var component = componentPool.Count > 0
-                            ? componentPool.Pop()
-                            : customPrefixFlagComponent;
+                    Entitas.IComponent component;
+                    if(!componentPool.TryPop(out component))
+                        component= customPrefixFlagComponent;
 
                     AddComponent(index, component);
                 } else {

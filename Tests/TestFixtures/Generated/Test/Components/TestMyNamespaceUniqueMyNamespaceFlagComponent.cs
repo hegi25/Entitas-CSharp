@@ -44,9 +44,9 @@ public partial class TestEntity {
                 var index = TestComponentsLookup.MyNamespaceUniqueMyNamespaceFlag;
                 if (value) {
                     var componentPool = GetComponentPool(index);
-                    var component = componentPool.Count > 0
-                            ? componentPool.Pop()
-                            : myNamespaceUniqueMyNamespaceFlagComponent;
+                    Entitas.IComponent component;
+                    if(!componentPool.TryPop(out component))
+                        component= myNamespaceUniqueMyNamespaceFlagComponent;
 
                     AddComponent(index, component);
                 } else {

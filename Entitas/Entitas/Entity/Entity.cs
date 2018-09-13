@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using DesperateDevs.Utils;
 
@@ -53,7 +55,7 @@ namespace Entitas {
         /// reusable component from the componentPool.
         /// Use entity.GetComponentPool(index) to get a componentPool for
         /// a specific component index.
-        public Stack<IComponent>[] componentPools { get { return _componentPools; } }
+        public ConcurrentStack<IComponent>[] componentPools { get { return _componentPools; } }
 
         /// The contextInfo is set by the context which created the entity and
         /// contains information about the context.
@@ -71,7 +73,7 @@ namespace Entitas {
 
         int _totalComponents;
         IComponent[] _components;
-        Stack<IComponent>[] _componentPools;
+        ConcurrentStack<IComponent>[] _componentPools;
         ContextInfo _contextInfo;
         IAERC _aerc;
 
@@ -80,7 +82,7 @@ namespace Entitas {
         string _toStringCache;
         StringBuilder _toStringBuilder;
 
-        public void Initialize(int creationIndex, int totalComponents, Stack<IComponent>[] componentPools, ContextInfo contextInfo = null, IAERC aerc = null) {
+        public void Initialize(int creationIndex, int totalComponents, ConcurrentStack<IComponent>[] componentPools, ContextInfo contextInfo = null, IAERC aerc = null) {
             Reactivate(creationIndex);
 
             _totalComponents = totalComponents;
@@ -311,10 +313,10 @@ namespace Entitas {
         /// Removed components will be pushed to the componentPool.
         /// Use entity.CreateComponent(index, type) to get a new or
         /// reusable component from the componentPool.
-        public Stack<IComponent> GetComponentPool(int index) {
+        public ConcurrentStack<IComponent> GetComponentPool(int index) {
             var componentPool = _componentPools[index];
             if (componentPool == null) {
-                componentPool = new Stack<IComponent>();
+                componentPool = new ConcurrentStack<IComponent>();
                 _componentPools[index] = componentPool;
             }
 
@@ -325,16 +327,18 @@ namespace Entitas {
         /// for the specified component index.
         public IComponent CreateComponent(int index, Type type) {
             var componentPool = GetComponentPool(index);
-            return componentPool.Count > 0
-                ? componentPool.Pop()
-                : (IComponent)Activator.CreateInstance(type);
+            if (componentPool.TryPop(out IComponent component))
+                return component;
+            return(IComponent)Activator.CreateInstance(type);
         }
 
         /// Returns a new or reusable component from the componentPool
         /// for the specified component index.
         public T CreateComponent<T>(int index) where T : new() {
             var componentPool = GetComponentPool(index);
-            return componentPool.Count > 0 ? (T)componentPool.Pop() : new T();
+            if (componentPool.TryPop(out IComponent component))
+                return (T)component;
+            return new T();
         }
 
         /// Returns the number of objects that retain this entity.

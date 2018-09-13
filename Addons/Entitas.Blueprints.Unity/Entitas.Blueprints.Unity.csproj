@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Entitas.Blueprints.Unity</RootNamespace>
     <AssemblyName>Entitas.Blueprints.Unity</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <ReleaseVersion>1.0.0</ReleaseVersion>
     <LangVersion>4</LangVersion>
   </PropertyGroup>

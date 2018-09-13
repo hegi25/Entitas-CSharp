@@ -47,9 +47,12 @@ ${memberAssignmentList}
                 var index = ${Index};
                 if (value) {
                     var componentPool = GetComponentPool(index);
-                    var component = componentPool.Count > 0
+                    Entitas.IComponent component;
+                    if(!componentPool.TryPop(out component))
+                        component = ${componentName}Component;
+                   /* var component = componentPool.Count > 0
                             ? componentPool.Pop()
-                            : ${componentName}Component;
+                            : ${componentName}Component;*/
 
                     AddComponent(index, component);
                 } else {

@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using DesperateDevs.Utils;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Entitas {
 
@@ -18,6 +19,75 @@ namespace Entitas {
 
         public static void Reset() {
             _cache.Reset();
+        }
+    }
+    public class ObjectPool<T>
+    {
+        private readonly Func<T> _factoryMethod;
+        private readonly Action<T> _resetMethod;
+        private readonly ConcurrentStack<T> _objectPool;
+
+        public ObjectPool(Func<T> factoryMethod, Action<T> resetMethod = null)
+        {
+            this._factoryMethod = factoryMethod;
+            this._resetMethod = resetMethod;
+            this._objectPool = new ConcurrentStack<T>();
+        }
+
+        public T Get()
+        {
+            if (this._objectPool.TryPop(out var pool))
+                return pool;
+            return this._factoryMethod();
+        }
+
+        public void Push(T obj)
+        {
+            if (this._resetMethod != null)
+                this._resetMethod(obj);
+            this._objectPool.Push(obj);
+        }
+    }
+    
+    public class ObjectCache
+    {
+        private readonly ConcurrentDictionary<Type, object> _objectPools;
+
+        public ObjectCache()
+        {
+            this._objectPools = new ConcurrentDictionary<Type, object>();
+        }
+
+        public ObjectPool<T> GetObjectPool<T>() where T : new()
+        {
+            Type key = typeof (T);
+            object obj;
+            if (!this._objectPools.TryGetValue(key, out obj))
+            {
+                obj = (object) new ObjectPool<T>((Func<T>) (() => Activator.CreateInstance<T>()), (Action<T>) null);
+                this._objectPools.TryAdd(key, obj);
+            }
+            return (ObjectPool<T>) obj;
+        }
+
+        public T Get<T>() where T : new()
+        {
+            return this.GetObjectPool<T>().Get();
+        }
+
+        public void Push<T>(T obj) where T : new()
+        {
+            this.GetObjectPool<T>().Push(obj);
+        }
+
+        public void RegisterCustomObjectPool<T>(ObjectPool<T> objectPool)
+        {
+            this._objectPools.TryAdd(typeof (T), (object) objectPool);
+        }
+
+        public void Reset()
+        {
+            this._objectPools.Clear();
         }
     }
 }

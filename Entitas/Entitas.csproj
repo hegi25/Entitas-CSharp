@@ -7,9 +7,9 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Entitas</RootNamespace>
     <AssemblyName>Entitas</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <ReleaseVersion>1.0.0</ReleaseVersion>
-    <LangVersion>4</LangVersion>
+    <LangVersion>7</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -32,9 +32,12 @@
     <Reference Include="DesperateDevs.Utils, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\Libraries\Dependencies\DesperateDevs\DesperateDevs.Utils.dll</HintPath>
     </Reference>
+    <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entitas\Group\ConcurrentHashSet.cs" />
+    <Compile Include="Entitas\Group\PlatformHelper.cs" />
     <Compile Include="Entitas\Matcher\Matcher.cs" />
     <Compile Include="Entitas\Matcher\MatcherToString.cs" />
     <Compile Include="Entitas\Matcher\MatcherEquals.cs" />

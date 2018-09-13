@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using DesperateDevs.Utils;
@@ -33,7 +34,7 @@ namespace Entitas {
         /// Removed components will be pushed to the componentPool.
         /// Use entity.CreateComponent(index, type) to get a new or reusable
         /// component from the componentPool.
-        public Stack<IComponent>[] componentPools { get { return _componentPools; } }
+        public ConcurrentStack<IComponent>[] componentPools { get { return _componentPools; } }
 
         /// The contextInfo contains information about the context.
         /// It's used to provide better error messages.
@@ -52,13 +53,13 @@ namespace Entitas {
 
         readonly int _totalComponents;
 
-        readonly Stack<IComponent>[] _componentPools;
+        readonly ConcurrentStack<IComponent>[] _componentPools;
         readonly ContextInfo _contextInfo;
         readonly Func<IEntity, IAERC> _aercFactory;
 
-        readonly HashSet<TEntity> _entities = new HashSet<TEntity>(EntityEqualityComparer<TEntity>.comparer);
-        readonly Stack<TEntity> _reusableEntities = new Stack<TEntity>();
-        readonly HashSet<TEntity> _retainedEntities = new HashSet<TEntity>(EntityEqualityComparer<TEntity>.comparer);
+        readonly ConcurrentHashSet<TEntity> _entities = new ConcurrentHashSet<TEntity>(EntityEqualityComparer<TEntity>.comparer);
+        readonly ConcurrentStack<TEntity> _reusableEntities = new ConcurrentStack<TEntity>();
+        readonly ConcurrentHashSet<TEntity> _retainedEntities = new ConcurrentHashSet<TEntity>(EntityEqualityComparer<TEntity>.comparer);
 
         readonly Dictionary<IMatcher<TEntity>, IGroup<TEntity>> _groups = new Dictionary<IMatcher<TEntity>, IGroup<TEntity>>();
         readonly List<IGroup<TEntity>>[] _groupsForIndex;
@@ -99,7 +100,7 @@ namespace Entitas {
             _aercFactory = aercFactory ?? (entity => new SafeAERC(entity));
 
             _groupsForIndex = new List<IGroup<TEntity>>[totalComponents];
-            _componentPools = new Stack<IComponent>[totalComponents];
+            _componentPools = new ConcurrentStack<IComponent>[totalComponents];
             _entityIndices = new Dictionary<string, IEntityIndex>();
             _groupChangedListPool = new ObjectPool<List<GroupChanged<TEntity>>>(
                 () => new List<GroupChanged<TEntity>>(),
@@ -128,15 +129,14 @@ namespace Entitas {
         public TEntity CreateEntity() {
             TEntity entity;
 
-            if (_reusableEntities.Count > 0) {
-                entity = _reusableEntities.Pop();
+            if (_reusableEntities.TryPop(out entity)) {
                 entity.Reactivate(_creationIndex++);
             } else {
                 entity = (TEntity)Activator.CreateInstance(typeof(TEntity));
                 entity.Initialize(_creationIndex++, _totalComponents, _componentPools, _contextInfo, _aercFactory(entity));
             }
 
-            _entities.Add(entity);
+            lock(_entities) _entities.Add(entity);
             entity.Retain(this);
             _entitiesCache = null;
 
@@ -322,13 +322,13 @@ namespace Entitas {
 
             var tEntity = (TEntity)entity;
             entity.RemoveAllOnEntityReleasedHandlers();
-            _retainedEntities.Remove(tEntity);
+            _retainedEntities.TryRemove(tEntity);
             _reusableEntities.Push(tEntity);
         }
 
         void onDestroyEntity(IEntity entity) {
             var tEntity = (TEntity)entity;
-            var removed = _entities.Remove(tEntity);
+            var removed = _entities.TryRemove(tEntity);
             if (!removed) {
                 throw new ContextDoesNotContainEntityException(
                     "'" + this + "' cannot destroy " + tEntity + "!",

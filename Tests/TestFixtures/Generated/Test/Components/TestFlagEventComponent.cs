@@ -17,9 +17,9 @@ public partial class TestEntity {
                 var index = TestComponentsLookup.FlagEvent;
                 if (value) {
                     var componentPool = GetComponentPool(index);
-                    var component = componentPool.Count > 0
-                            ? componentPool.Pop()
-                            : flagEventComponent;
+                    Entitas.IComponent component;
+                    if(!componentPool.TryPop(out component))
+                        component= flagEventComponent;
 
                     AddComponent(index, component);
                 } else {

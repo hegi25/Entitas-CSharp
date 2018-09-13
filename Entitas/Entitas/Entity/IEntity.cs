@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace Entitas {
-
+namespace Entitas
+{
     public delegate void EntityComponentChanged(
         IEntity entity, int index, IComponent component
     );
@@ -13,8 +14,8 @@ namespace Entitas {
 
     public delegate void EntityEvent(IEntity entity);
 
-    public interface IEntity : IAERC {
-
+    public interface IEntity : IAERC
+    {
         event EntityComponentChanged OnComponentAdded;
         event EntityComponentChanged OnComponentRemoved;
         event EntityComponentReplaced OnComponentReplaced;
@@ -25,13 +26,13 @@ namespace Entitas {
         int creationIndex { get; }
         bool isEnabled { get; }
 
-        Stack<IComponent>[] componentPools { get; }
+        ConcurrentStack<IComponent>[] componentPools { get; }
         ContextInfo contextInfo { get; }
         IAERC aerc { get; }
 
         void Initialize(int creationIndex,
             int totalComponents,
-            Stack<IComponent>[] componentPools,
+            ConcurrentStack<IComponent>[] componentPools,
             ContextInfo contextInfo = null,
             IAERC aerc = null);
 
@@ -51,7 +52,7 @@ namespace Entitas {
 
         void RemoveAllComponents();
 
-        Stack<IComponent> GetComponentPool(int index);
+        ConcurrentStack<IComponent> GetComponentPool(int index);
         IComponent CreateComponent(int index, Type type);
         T CreateComponent<T>(int index) where T : new();
 
